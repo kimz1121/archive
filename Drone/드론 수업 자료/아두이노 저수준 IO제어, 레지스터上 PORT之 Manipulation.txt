@@ -1,0 +1,38 @@
+https://www.instructables.com/id/ATTiny-Port-Manipulation/
+
+
+http://www.dreamy.pe.kr/zbxe/CodeClip/3769045
+
+
+1을 레지스터위치까지 밀어보낸다
+
+PORTB | = (1 << PB3); 
+
+1을 PB3만큼 <<(레프트 시프트)한 수를 |=(AND대입 연산자로) 위에 덧 씌운다.
+
+
+1 생성,
+卽, 
+0000 0001 생성
+
+PB3 (3번핀)
+
+1<< PB3 = B0000 0001 << 3 
+=
+B000 0100
+
+여기서 
+
+PORTB 레지스터에 |(AND로 덧씌우면) 
+
+EX) PORTB 레지스터 값 = B0001 0000
+
+PORTB |= (1<< PB3);
+
+==>> PORTB |= (B0000 0001 << 3);
+
+==>> B0001 0000 |= B000 0100;
+
+결과 :  PORTB = B0001 0100
+
+https://www.instructables.com/id/ATTiny-Port-Manipulation/
