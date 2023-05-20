@@ -1,0 +1,134 @@
+//<시작>========================================
+int object_binary_making(char object_pin, char modified_binary)
+{
+	char result_binary = 0;
+	char not_binary = ~object_pin;
+	result_binary |= (object_pin & modified_binary);
+	result_binary &= (not_binary | modified_binary);
+	//printf("%d\n", result_binary);
+	return result_binary;
+}
+//<끝>==========================================
+
+char char_binary_fit_modifing(char object_pin, char binary_char)//, int object_bin_length = 8)//, int signal_binary_length = 3)
+{
+	// gkatnsms 
+	char modified_binary = binary_char;
+	char temp = object_pin;
+	while((temp % 0b10) == 0)
+	{
+		modified_binary = modified_binary << 1;
+		temp = temp >> 1;
+	}
+	return modified_binary;
+}
+
+
+
+//<기본 동작 함수>55555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555
+//<시작>========================================
+
+void delay_costom_ms(int time_ms = 0)
+{
+	int n = 0;
+	while(n < time_ms)
+	{
+		_delay_ms(1);
+		n=n+1;
+	}
+}
+
+//<끝>==========================================
+
+//말단 입출력 보조 함수
+//<시작>========================================
+int port_input_assistant(char port_name, char object_pin)
+{
+	int temp = 0;
+	char result = 0;
+	switch(port_name)
+	{
+		case 'a':
+		case 'A':
+		temp = PINA;
+		break;
+		case 'b':
+		case 'B':
+		temp = PINB;
+		break;
+		case 'c':
+		case 'C':
+		temp = PINC;
+		break;
+		case 'd':
+		case 'D':
+		temp = PIND;
+		break;
+		case 'e':
+		case 'E':
+		temp = PINE;
+		break;
+		case 'f':
+		case 'F':
+		temp = PINF;
+		break;
+	}
+	int i = 0;
+	int n = 0;
+	int array[8] = {0,};
+	for(i = 0; i < 8; i = i + 1)
+	{
+		if(((object_pin>>i)%0b10))
+		{
+			array[n] = i;
+			n = n + 1;
+		}
+	}
+	for(i = 0; i < n; i = i + 1)
+	{
+		result |= ((temp>>array[i])%0b10)<<i;
+	}
+	return result;
+}
+//<끝>==========================================
+//<시작>========================================
+void port_output_assistant(char port_name, char object_pin, char binary_char)
+{
+	
+	switch(port_name)
+	{
+		case 'a':
+		case 'A':
+			PORTA &= ~object_pin;
+	 		PORTA |= object_binary_making(object_pin, char_binary_fit_modifing(object_pin, binary_char));
+	  		break;
+		case 'b':
+		case 'B':
+			PORTB &= ~object_pin;
+			PORTB |= object_binary_making(object_pin, char_binary_fit_modifing(object_pin, binary_char));
+			break;
+		case 'c':
+		case 'C':
+			PORTC &= ~object_pin;
+			PORTC |= object_binary_making(object_pin, char_binary_fit_modifing(object_pin, binary_char));
+			break;
+		case 'd':
+		case 'D':
+			PORTD &= ~object_pin;
+			PORTD |= object_binary_making(object_pin, char_binary_fit_modifing(object_pin, binary_char));
+			break;
+		case 'e': 
+		case 'E':
+			PORTE &= ~object_pin;
+			PORTE |= object_binary_making(object_pin, char_binary_fit_modifing(object_pin, binary_char));
+			break;
+		case 'f':
+		case 'F':
+			PORTF &= ~object_pin;
+			PORTF |= object_binary_making(object_pin, char_binary_fit_modifing(object_pin, binary_char));
+			break;
+	}
+	printf("z");
+	//printf("%c : %d\n", port_name, object_binary_making(object_pin, char_binary_fit_modifing(object_pin, binary_char)));
+}
+//<끝>==========================================

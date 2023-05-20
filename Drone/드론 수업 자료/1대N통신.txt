@@ -1,0 +1,77 @@
+1:N 통신(I2C)
+
+https://kocoafab.cc/tutorial/view/452
+sda와sdl은 풀업 저항을 필요로 한다.
+
+주소는 마스터에게 필요하지 않다.
+오로지 슬레이브에게만 주소가 필요하다.
+
+슬레이브는 마스터가 누근지에 상관 없이 불리면 복종하면 되는 존재이다.
+
+Serial.read를 이용하는 부분에서 48을 빼기(-)하는 이유는 
+Serial.read는 3을 입력 했을 때 문자 3으로 인식해서 ASCII : 51을 반환하기 때문이다. 
+ASCII 코드에서 숫자는
+0값이 아스키코드 48을 차지하고 다음 숫저들소 순서대로
+1:49
+2:50
+3:51
+.
+.
+.
+7:55
+8:56
+9:57
+을 차지하기 때문에 48을 뺴주어야 문자 'ascii 51'로 저장된 것을 숫자 3으로 나타낼 수 있다.
+
+master
+
+
+----------------------------------------------------
+slave
+#include <Wire.h>
+
+// 자신의 슬레이브 주소를 설정해 줍니다.(슬레이브 주소에 맞게 수정해야 합니다.)
+#define SLAVE 4  
+
+// 카운터
+byte count = 0; 
+char temp;
+
+void setup() {
+	// Wire 라이브러리 초기화
+	// 슬레이브로 참여하기 위해서는 주소를 지정해야 한다.
+	Wire.begin(SLAVE);
+	Wire.onReceive(receiveFromMaster);
+	// 마스터의 데이터 전송 요구가 있을 때 처리할 함수 등록
+	Wire.onRequest(sendToMaster);
+	pinMode(13, OUTPUT);
+	Serial.begin(9600);
+}
+
+void loop () {
+	// 요청이 들어오면 13번 LED를 0.5초간 켜줍니다.
+	if (temp == 'o') { 
+		play();
+	}
+}
+
+void receiveFromMaster(int bytes) {
+	char ch[2];
+	for (int i = 0 ; i < bytes ; i++) {
+		// 수신 버퍼 읽기
+		ch[i] = Wire.read(); 
+	}
+	temp = ch[0];
+}
+
+void play() { 
+	digitalWrite(13, HIGH);
+	delay(500);
+	digitalWrite(13, LOW);
+	temp = 0;
+}
+
+void sendToMaster() {
+	// 자신의 슬레이브 주소를 담은 메세지를 마스터에게 보냅니다. 슬레이브 주소에 맞게 수정해야 합니다.
+	Wire.write("4th Arduino ");
+}
