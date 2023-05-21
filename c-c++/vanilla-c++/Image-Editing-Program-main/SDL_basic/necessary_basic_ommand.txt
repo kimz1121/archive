@@ -1,0 +1,80 @@
+chmod : 파일 권한 변경명령어 (현재 775(rwxrwxr-x)로 작성 및 사용 중)
+gcc : 컴파일 명령어
+ls : 파일 상태 확인 권한(퍼미션)등을 확인 할 수 있음 파일 실행 권한 여부
+
+사용하는 라이브러리 설치사항
+sudo apt install libsdl2-dev
+
+사용하는 라이브러리 단축이름
+-lSDL2
+-lglfw
+
+
+사용 예시
+
+kimz-iw@kimziw-VirtualBox:~/ksw_coding/c++/2021/image_edit/Visual-Studio-Code-OpenGL-Setup$ gcc -c src/hello_openGL_iw.cpp kimz-iw@kimziw-VirtualBox:~/ksw_coding/c++/2021/image_edit/Visual-Studio-Code-OpenGL-Setup$ gcc -o hello_openGL_iw.o hello_openGL_iw
+gcc: error: hello_openGL_iw: 그런 파일이나 디렉터리가 없습니다
+gcc: fatal error: no input files
+compilation terminated.
+kimz-iw@kimziw-VirtualBox:~/ksw_coding/c++/2021/image_edit/Visual-Studio-Code-OpenGL-Setup$ gcc  hello_openGL_iw.o -o  hello_openGL_iw
+/usr/bin/ld: hello_openGL_iw.o: in function `main':
+hello_openGL_iw.cpp:(.text+0x9): undefined reference to `glfwInit'
+/usr/bin/ld: hello_openGL_iw.cpp:(.text+0x18): undefined reference to `glfwWindowHint'
+/usr/bin/ld: hello_openGL_iw.cpp:(.text+0x27): undefined reference to `glfwWindowHint'
+/usr/bin/ld: hello_openGL_iw.cpp:(.text+0x36): undefined reference to `glfwWindowHint'
+collect2: error: ld returned 1 exit status
+kimz-iw@kimziw-VirtualBox:~/ksw_coding/c++/2021/image_edit/Visual-Studio-Code-OpenGL-Setup$ gcc  hello_openGL_iw.o -o  hello_openGL_iw 
+/usr/bin/ld: hello_openGL_iw.o: in function `main':
+hello_openGL_iw.cpp:(.text+0x9): undefined reference to `glfwInit'
+/usr/bin/ld: hello_openGL_iw.cpp:(.text+0x18): undefined reference to `glfwWindowHint'
+/usr/bin/ld: hello_openGL_iw.cpp:(.text+0x27): undefined reference to `glfwWindowHint'
+/usr/bin/ld: hello_openGL_iw.cpp:(.text+0x36): undefined reference to `glfwWindowHint'
+collect2: error: ld returned 1 exit status
+kimz-iw@kimziw-VirtualBox:~/ksw_coding/c++/2021/image_edit/Visual-Studio-Code-OpenGL-Setup$ gcc -c src/hello_openGL_iw.cpp -o hello_openGL_iw -lglfw -ldl
+kimz-iw@kimziw-VirtualBox:~/ksw_coding/c++/2021/image_edit/Visual-Studio-Code-OpenGL-Setup$ ./hello_openGL_iw
+bash: ./hello_openGL_iw: 허가 거부
+kimz-iw@kimziw-VirtualBox:~/ksw_coding/c++/2021/image_edit/Visual-Studio-Code-OpenGL-Setup$ ls -l
+합계 348
+drwxrwxr-x 2 kimz-iw kimz-iw   4096  1월 22 17:59 builds
+drwxrwxr-x 5 kimz-iw kimz-iw   4096  1월 21 16:34 dependencies
+-rw-rw-r-- 1 kimz-iw kimz-iw 201896  1월 21 16:34 glad.o
+-rw-rw-r-- 1 kimz-iw kimz-iw   1712  1월 22 18:24 hello_openGL_iw
+-rw-rw-r-- 1 kimz-iw kimz-iw   1712  1월 22 18:14 hello_openGL_iw.o
+-rwxrwxr-x 1 kimz-iw kimz-iw 129528  1월 21 16:34 main_first
+drwxrwxr-x 2 kimz-iw kimz-iw   4096  1월 22 18:07 src
+kimz-iw@kimziw-VirtualBox:~/ksw_coding/c++/2021/image_edit/Visual-Studio-Code-OpenGL-Setup$ chmod 755 hello_openGL_iw
+kimz-iw@kimziw-VirtualBox:~/ksw_coding/c++/2021/image_edit/Visual-Studio-Code-OpenGL-Setup$ ./hello_openGL_iw 
+bash: ./hello_openGL_iw: cannot execute binary file: Exec 형식 오류
+kimz-iw@kimziw-VirtualBox:~/ksw_coding/c++/2021/image_edit/Visual-Studio-Code-OpenGL-Setup$ ls -l
+합계 352
+drwxrwxr-x 2 kimz-iw kimz-iw   4096  1월 22 17:59 builds
+drwxrwxr-x 5 kimz-iw kimz-iw   4096  1월 21 16:34 dependencies
+-rw-rw-r-- 1 kimz-iw kimz-iw 201896  1월 21 16:34 glad.o
+-rwxr-xr-x 1 kimz-iw kimz-iw   1712  1월 22 18:24 hello_openGL_iw
+-rw-rw-r-- 1 kimz-iw kimz-iw   1712  1월 22 18:14 hello_openGL_iw.o
+-rwxrwxr-x 1 kimz-iw kimz-iw 129528  1월 21 16:34 main_first
+-rw-rw-r-- 1 kimz-iw kimz-iw    187  1월 22 18:45 necessary_basic_ommand.txt
+drwxrwxr-x 2 kimz-iw kimz-iw   4096  1월 22 18:07 src
+kimz-iw@kimziw-VirtualBox:~/ksw_coding/c++/2021/image_edit/Visual-Studio-Code-OpenGL-Setup$ gcc src/hello_openGL_iw.cpp -o hello_openGL_iw glad.o -lglfw -ldl
+kimz-iw@kimziw-VirtualBox:~/ksw_coding/c++/2021/image_edit/Visual-Studio-Code-OpenGL-Setup$ gcc src/hello_openGL_iw.cpp -o hello_openGL_iw glad.o -lglfw -ldl
+kimz-iw@kimziw-VirtualBox:~/ksw_coding/c++/2021/image_edit/Visual-Studio-Code-OpenGL-Setup$ ./hello_openGL_iw 
+
+
+
+kimz-iw@kimziw-VirtualBox:~/ksw_coding/c++/2021/image_edit/Image-Editing-Program$ g++ SDL_basic/window/window_sample_iw_2.cpp -o first_window -libsdl2-dev -libsdl2-2.0-0 -ldl
+/usr/bin/ld: cannot find -libsdl2-dev
+/usr/bin/ld: cannot find -libsdl2-2.0-0
+collect2: error: ld returned 1 exit status
+kimz-iw@kimziw-VirtualBox:~/ksw_coding/c++/2021/image_edit/Image-Editing-Program$ g++ SDL_basic/window/window_sample_iw_2.cpp -o first_window -/usr/include/libsdl2-dev -libsdl2-2.0-0 -ldl
+g++: error: unrecognized command line option ‘-/usr/include/libsdl2-dev’
+kimz-iw@kimziw-VirtualBox:~/ksw_coding/c++/2021/image_edit/Image-Editing-Program$ g++ SDL_basic/window/window_sample_iw_2.cpp -o first_window -/usr/include/SDL2/SDL.h -ldl
+g++: error: unrecognized command line option ‘-/usr/include/SDL2/SDL.h’
+kimz-iw@kimziw-VirtualBox:~/ksw_coding/c++/2021/image_edit/Image-Editing-Program$ g++ SDL_basic/window/window_sample_iw_2.cpp -o first_window
+/usr/bin/ld: /tmp/cclEj18B.o: in function `main':
+window_sample_iw_2.cpp:(.text+0x1a): undefined reference to `SDL_Init'
+collect2: error: ld returned 1 exit status
+kimz-iw@kimziw-VirtualBox:~/ksw_coding/c++/2021/image_edit/Image-Editing-Program$ g++ SDL_basic/window/window_sample_iw_2.cpp -o first_window -lsdl2 -ldl
+/usr/bin/ld: cannot find -lsdl2
+collect2: error: ld returned 1 exit status
+kimz-iw@kimziw-VirtualBox:~/ksw_coding/c++/2021/image_edit/Image-Editing-Program$ g++ SDL_basic/window/window_sample_iw_2.cpp -o first_window -lSDL2 -ldl
+kimz-iw@kimziw-VirtualBox:~/ksw_coding/c++/2021/image_edit/Image-Editing-Program$ 
