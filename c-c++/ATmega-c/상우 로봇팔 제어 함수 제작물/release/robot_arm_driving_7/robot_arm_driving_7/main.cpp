@@ -949,7 +949,7 @@ void bldc_motor_driving_open_loop(char port_name, int object_pin, char direction
 	virtual_hall_value_generator(current_hall_sensor_value_address,*current_step_address,direction_value);
 	output_signal = sign_calculating(*current_hall_sensor_value_address, direction_value);
 	//printf("체크 7 : %d\n", output_signal);
-	input_value_to_brige_open_loop(port_name, object_pin, output_signal, 50);//anqngk tkdxodptj 20 ms 동안 5v내외의 전압으로 탈조 없이 진행 되었음.... 그러나 부하가 있는 상태에서는 상태에 따라 필요한 전력 공급 시간이 다를 수 있으니 모터의 상태에 따른 피드백 제어가 필요함... 증 스텝이 1(or -1)증가 할때까지 신호를 공급해야 하는 것임.
+	input_value_to_brige_open_loop(port_name, object_pin, output_signal, 50);//무부하 상태에서 20 ms 동안 5v내외의 전압으로 탈조 없이 진행 되었음.... 그러나 부하가 있는 상태에서는 상태에 따라 필요한 전력 공급 시간이 다를 수 있으니 모터의 상태에 따른 피드백 제어가 필요함... 증 스텝이 1(or -1)증가 할때까지 신호를 공급해야 하는 것임.
 	virtual_position_management(current_step_address, direction_value);
 	
 }
