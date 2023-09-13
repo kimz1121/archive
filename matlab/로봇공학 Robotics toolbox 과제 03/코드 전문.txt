@@ -1,0 +1,1189 @@
+classdef app_02_00 < matlab.apps.AppBase
+
+    % Properties that correspond to app components
+    properties (Access = public)
+        UIFigure                    matlab.ui.Figure
+        speedSpinner                matlab.ui.control.Spinner
+        speedradsSpinnerLabel       matlab.ui.control.Label
+        time_precisionSpinner       matlab.ui.control.Spinner
+        time_precisionSpinnerLabel  matlab.ui.control.Label
+        moveplanningisrequiredbeforeusingButton  matlab.ui.control.Button
+        planningLeast2pointsrequiredtoplanningButton  matlab.ui.control.Button
+        clearallwaypointsButton     matlab.ui.control.Button
+        setwaypointButton           matlab.ui.control.Button
+        time_gapSpinner             matlab.ui.control.Spinner
+        time_gapSpinnerLabel        matlab.ui.control.Label
+        iterationLabel              matlab.ui.control.Label
+        workspacewithoutrobotplotrecomenditer1000Button  matlab.ui.control.Button
+        workspace_check_iteration   matlab.ui.control.NumericEditField
+        workspacewithrobotplotrecomenditer100Button  matlab.ui.control.Button
+        joint_anlge_view_6          matlab.ui.control.NumericEditField
+        joint_anlge_view_5          matlab.ui.control.NumericEditField
+        joint_anlge_view_4          matlab.ui.control.NumericEditField
+        joint_anlge_view_3          matlab.ui.control.NumericEditField
+        joint_anlge_view_2          matlab.ui.control.NumericEditField
+        joint_anlge_view_1          matlab.ui.control.NumericEditField
+        setzeroButton               matlab.ui.control.Button
+        randomButton                matlab.ui.control.Button
+        ZLabel                      matlab.ui.control.Label
+        YLabel                      matlab.ui.control.Label
+        XLabel                      matlab.ui.control.Label
+        YawLabel                    matlab.ui.control.Label
+        PitchLabel                  matlab.ui.control.Label
+        RollLabel                   matlab.ui.control.Label
+        joint_3SliderLabel          matlab.ui.control.Label
+        joint_4SliderLabel          matlab.ui.control.Label
+        joint_5SliderLabel          matlab.ui.control.Label
+        joint_6Slider               matlab.ui.control.Slider
+        joint_5Slider               matlab.ui.control.Slider
+        joint_6SliderLabel          matlab.ui.control.Label
+        joint_2SliderLabel          matlab.ui.control.Label
+        joint_4Slider               matlab.ui.control.Slider
+        joint_3Slider               matlab.ui.control.Slider
+        joint_2Slider               matlab.ui.control.Slider
+        joint_1Slider               matlab.ui.control.Slider
+        joint_1SliderLabel          matlab.ui.control.Label
+        attitude_roll               matlab.ui.control.Spinner
+        attitude_pitch              matlab.ui.control.Spinner
+        attitude_yaw                matlab.ui.control.Spinner
+        position_x                  matlab.ui.control.Spinner
+        position_y                  matlab.ui.control.Spinner
+        position_z                  matlab.ui.control.Spinner
+        inverseButton               matlab.ui.control.Button
+        UIAxes                      matlab.ui.control.UIAxes
+        UIAxes2                     matlab.ui.control.UIAxes
+        UIAxes3                     matlab.ui.control.UIAxes
+        UIAxes4                     matlab.ui.control.UIAxes
+    end
+
+    %{
+    author                  : kimz1121@naver.com
+    complete_date           : 2022.11.01.
+    used_matlab_verstion    : MATLAB 2022b
+    requirement             : peter corke robotics tool box, matlab appdesinger
+    copyright               : CC(Creative Commons License) BY-NC-SA, 
+                              GPL lisense <you shoud recive copy of a copy of the GNU general Public Lisense
+                              Plese see <https://www.gnu.org/licenses/>>
+    %}
+    properties (Access = private)
+        joint_lim
+        L = Link.empty()
+        robot = SerialLink.empty()
+        joint_val_arr = [0, 0, 0, 0, 0, 0];
+        T_end
+        roll
+        pitch
+        yaw
+        P_x
+        P_y
+        P_z
+
+        num_of_points
+        position_state_array
+        timings
+        time_domain
+        x_range
+        x_d_range
+        x_dd_range
+    end
+
+    methods (Access = private)
+
+        function forward_kinematics(app)
+            Joint_1 = app.joint_1Slider.Value*pi/180;
+            Joint_2 = app.joint_2Slider.Value*pi/180;
+            Joint_3 = app.joint_3Slider.Value*pi/180;
+            Joint_4 = app.joint_4Slider.Value*pi/180;
+            Joint_5 = app.joint_5Slider.Value*pi/180;
+            Joint_6 = app.joint_6Slider.Value*pi/180;
+
+            app.joint_lim = [-90*pi/180, 90*pi/180;
+                -45*pi/180, 135*pi/180;
+                -160*pi/180, 120*pi/180;
+                -350*pi/180, 350*pi/180;
+                -120*pi/180, 120*pi/180;
+                -350*pi/180, 350*pi/180;
+                ];
+
+            app.L(1) = Link([0, 0.815, 0.350, pi/2]);
+            app.L(2) = Link([0, 0, 0.850, 0]);
+            app.L(3) = Link([0, 0, 0.145, pi/2]);
+            app.L(4) = Link([0, 0.820, 0, -pi/2]);
+            app.L(5) = Link([0, 0, 0, pi/2]);
+            app.L(6) = Link([0, 0.170, 0, 0]);
+
+            %             app.L(1) = Link([0, 0.815, 0.350, pi/2]);
+            %             app.L(2) = Link([0, 0, 0.850, 0]);
+            %             app.L(3) = Link([0, 0, 0.145, -pi/2]);
+            %             app.L(4) = Link([0, 0.820, 0, pi/2]);
+            %             app.L(5) = Link([0, 0, 0, -pi/2]);
+            %             app.L(6) = Link([0, 0.170, 0, 0]);
+
+            app.robot = SerialLink(app.L);
+            app.robot.name = 'KUKA';
+            %             app.robot
+
+            title("robotics tool box");
+            app.robot.plot([Joint_1, Joint_2, Joint_3, Joint_4, Joint_5, Joint_6], 'jaxes');
+            T = app.robot.fkine([Joint_1, Joint_2, Joint_3, Joint_4, Joint_5, Joint_6]);
+            app.T_end = [T.n, T.o, T.a, T.t; 0, 0, 0, 1];
+
+            app.roll = atan2(app.T_end(3, 2), app.T_end(3, 3));
+            app.pitch = asin(-app.T_end(3, 1));
+            app.yaw = atan2(app.T_end(1, 1), app.T_end(2, 1));
+
+            app.P_x = app.T_end(1, 4);
+            app.P_y = app.T_end(2, 4);
+            app.P_z = app.T_end(3, 4);
+
+            app.update_position();
+            app.update_attitude();
+        end
+
+        function forward_kinematics_with_out_plot(app)
+            Joint_1 = app.joint_1Slider.Value*pi/180;
+            Joint_2 = app.joint_2Slider.Value*pi/180;
+            Joint_3 = app.joint_3Slider.Value*pi/180;
+            Joint_4 = app.joint_4Slider.Value*pi/180;
+            Joint_5 = app.joint_5Slider.Value*pi/180;
+            Joint_6 = app.joint_6Slider.Value*pi/180;
+
+            app.joint_lim = [-90*pi/180, 90*pi/180;
+                -45*pi/180, 135*pi/180;
+                -160*pi/180, 120*pi/180;
+                -350*pi/180, 350*pi/180;
+                -120*pi/180, 120*pi/180;
+                -350*pi/180, 350*pi/180;
+                ];
+
+            app.L(1) = Link([0, 0.815, 0.350, pi/2]);
+            app.L(2) = Link([0, 0, 0.850, 0]);
+            app.L(3) = Link([0, 0, 0.145, pi/2]);
+            app.L(4) = Link([0, 0.820, 0, -pi/2]);
+            app.L(5) = Link([0, 0, 0, pi/2]);
+            app.L(6) = Link([0, 0.170, 0, 0]);
+
+            %             app.L(1) = Link([0, 0.815, 0.350, pi/2]);
+            %             app.L(2) = Link([0, 0, 0.850, 0]);
+            %             app.L(3) = Link([0, 0, 0.145, -pi/2]);
+            %             app.L(4) = Link([0, 0.820, 0, pi/2]);
+            %             app.L(5) = Link([0, 0, 0, -pi/2]);
+            %             app.L(6) = Link([0, 0.170, 0, 0]);
+
+            app.robot = SerialLink(app.L);
+            app.robot.name = 'KUKA';
+            %             app.robot
+
+            %             title("robotics tool box");
+            %             app.robot.plot([Joint_1, Joint_2, Joint_3, Joint_4, Joint_5, Joint_6], 'jaxes');
+            T = app.robot.fkine([Joint_1, Joint_2, Joint_3, Joint_4, Joint_5, Joint_6]);
+            app.T_end = [T.n, T.o, T.a, T.t; 0, 0, 0, 1];
+
+            app.roll = atan2(app.T_end(3, 2), app.T_end(3, 3));
+            app.pitch = asin(-app.T_end(3, 1));
+            app.yaw = atan2(app.T_end(1, 1), app.T_end(2, 1));
+
+            app.P_x = app.T_end(1, 4);
+            app.P_y = app.T_end(2, 4);
+            app.P_z = app.T_end(3, 4);
+
+            app.update_position();
+            app.update_attitude();
+        end
+
+        function results = update_joint_anlge_view(app)
+            app.joint_anlge_view_1.Value = app.joint_val_arr(1);
+            app.joint_anlge_view_2.Value = app.joint_val_arr(2);
+            app.joint_anlge_view_3.Value = app.joint_val_arr(3);
+            app.joint_anlge_view_4.Value = app.joint_val_arr(4);
+            app.joint_anlge_view_5.Value = app.joint_val_arr(5);
+            app.joint_anlge_view_6.Value = app.joint_val_arr(6);
+        end
+
+        function results = update_joint_anlge_array(app)
+            app.joint_val_arr(1) = app.joint_1Slider.Value;
+            app.joint_val_arr(2) = app.joint_2Slider.Value;
+            app.joint_val_arr(3) = app.joint_3Slider.Value;
+            app.joint_val_arr(4) = app.joint_4Slider.Value;
+            app.joint_val_arr(5) = app.joint_5Slider.Value;
+            app.joint_val_arr(6) = app.joint_6Slider.Value;
+        end
+
+        function results = update_slider_val(app)
+            joint_lim_deg = [-90, 90;
+                -45, 135;
+                -160, 120;
+                -350, 350;
+                -120, 120;
+                -350, 350;
+                ];
+            slider_val_arr = [0, 0, 0, 0, 0, 0];
+
+            temp = 0;
+            n = 1;
+            while n <= 6
+                if app.joint_val_arr(n) < joint_lim_deg(n, 1)
+                    temp = joint_lim_deg(n, 1) ;
+                elseif  joint_lim_deg(n, 2) < app.joint_val_arr(n)
+                    temp = joint_lim_deg(n, 2);
+                else
+                    temp = app.joint_val_arr(n);
+                end
+                slider_val_arr(n) = temp;
+                n = n + 1;
+            end
+
+            app.joint_1Slider.Value = slider_val_arr(1);
+            app.joint_2Slider.Value = slider_val_arr(2);
+            app.joint_3Slider.Value = slider_val_arr(3);
+            app.joint_4Slider.Value = slider_val_arr(4);
+            app.joint_5Slider.Value = slider_val_arr(5);
+            app.joint_6Slider.Value = slider_val_arr(6);
+        end
+
+        function results = update_position(app)
+            app.attitude_roll.Value = round(app.roll*180/pi, 5);
+            app.attitude_pitch.Value = round(app.pitch*180/pi, 5);
+            app.attitude_yaw.Value = round(app.yaw*180/pi, 5);
+        end
+
+        function results = update_attitude(app)
+            app.position_x.Value = app.P_x;
+            app.position_y.Value = app.P_y;
+            app.position_z.Value = app.P_z;
+        end
+
+        function results = inverse(app)
+            P_x_input = app.position_x.Value;
+            P_y_input = app.position_y.Value;
+            P_z_input = app.position_z.Value;
+
+            roll_input = app.attitude_roll.Value*pi/180;
+            pitch_input = app.attitude_pitch.Value*pi/180;
+            yaw_input = app.attitude_yaw.Value*pi/180;
+
+            disp(P_x_input)
+            disp(P_y_input)
+            disp(P_z_input)
+
+            T_RPY = [cos(yaw_input)*cos(pitch_input), cos(pitch_input)*sin(pitch_input)*sin(roll_input)-sin(yaw_input)*cos(roll_input), cos(yaw_input)*sin(pitch_input)*cos(roll_input)+sin(yaw_input)*sin(roll_input), 0;
+                sin(yaw_input)*cos(pitch_input), sin(pitch_input)*sin(pitch_input)*sin(roll_input)+cos(yaw_input)*cos(roll_input), sin(yaw_input)*sin(pitch_input)*cos(roll_input)-cos(yaw_input)*sin(roll_input), 0;
+                -sin(pitch_input), cos(pitch_input)*sin(roll_input), cos(pitch_input)*cos(roll_input), 0;
+                0, 0, 0, 1
+                ];
+
+            T_XYZ = [1, 0, 0, P_x_input;
+                0, 1, 0, P_y_input;
+                0, 0, 1, P_z_input;
+                0, 0, 0, 1];
+
+            T = T_XYZ*T_RPY;
+
+            app.joint_lim = [-90*pi/180, 90*pi/180;
+                -135*pi/180, 45*pi/180;
+                -160*pi/180, 120*pi/180;
+                -350*pi/180, 350*pi/180;
+                -120*pi/180, 120*pi/180;
+                -350*pi/180, 350*pi/180;
+                ];
+
+            app.L(1) = Link([0, 0.815, 0.350, pi/2]);
+            app.L(2) = Link([0, 0, 0.850, 0]);
+            app.L(3) = Link([0, 0, 0.145, pi/2]);
+            app.L(4) = Link([0, 0.820, 0, -pi/2]);
+            app.L(5) = Link([0, 0, 0, pi/2]);
+            app.L(6) = Link([0, 0.170, 0, 0]);
+
+            app.robot = SerialLink(app.L, qlim = app.joint_lim);
+            app.robot.name = 'KUKA';
+            %             app.robot
+
+            %             J = app.robot.ikine(T, mask = [1, 1, 1, 1, 1, 1]);
+            J = app.robot.ikine(T);
+            %             J = app.robot.ikcon(T);
+            %             disp(J);
+            title("robotics tool box");
+            app.robot.plot(J, 'jaxes');
+
+            app.joint_val_arr(1) = double(J(1)*180/pi);
+            app.joint_val_arr(2) = double(J(2)*180/pi);
+            app.joint_val_arr(3) = double(J(3)*180/pi);
+            app.joint_val_arr(4) = double(J(4)*180/pi);
+            app.joint_val_arr(5) = double(J(5)*180/pi);
+            app.joint_val_arr(6) = double(J(6)*180/pi);
+
+            T = app.robot.fkine(J);
+            app.T_end = [T.n, T.o, T.a, T.t; 0, 0, 0, 1];
+
+            app.roll = atan2(app.T_end(3, 2), app.T_end(3, 3));
+            app.pitch = asin(-app.T_end(3, 1));
+            app.yaw = atan2(app.T_end(2, 1), app.T_end(1, 1));
+
+            app.P_x = P_x_input;
+            app.P_y = P_y_input;
+            app.P_z = P_z_input;
+        end
+
+        function joint_val_arr_local = monte_carlo_rand(app, limit_joint_arr, gap, n)
+
+            limit_joint_length = limit_joint_arr(:, 2) - limit_joint_arr(:, 1);
+            joint_val_arr_local = limit_joint_arr(:, 1) + limit_joint_length .* rand(6, 1);
+
+            app.joint_val_arr = joint_val_arr_local;
+        end
+
+        function [time, x, x_d, x_dd] = poly5(app, x_0, x_1, t_0, t_1, t_precision)
+            %function [time, x, x_d, x_dd] = poly5(app, x_0, x_1, t_0, t_1, t_precision)
+            %poly5 Summary of this function goes here
+            %   x_0 : 3*6 행렬
+            %   x_1 : 3*6 행렬
+            %   1행 : 위치
+            %   2행 : 속도
+            %   3행 : 가속도
+            %   n열 : n 번 조인트의 위치, 속도, 가속도
+            %   반환 time, x, x_d, x_dd
+
+            %5차 다항식 풀이를 위한 상수 정의
+            %식의 차수가 변화하지 않는한 아래의 상수는 일정.
+            order = [0 1 2 3 4 5;
+                0 0 1 2 3 4;
+                0 0 0 1 2 3;
+                0 0 0 0 1 2;
+                0 0 0 0 0 1;
+                0 0 0 0 0 0;
+                ];
+
+            diff_factor_0 = [
+                1 1 1 1 1  1;
+                0 1 2 3 4  5;
+                0 0 2 6 12 20;
+                0 0 0 6 24 60;
+                0 0 0 0 24 120;
+                0 0 0 0 0  120;
+                ];
+
+            %방정식 풀이를 위한 중간 유도변수
+
+            t_mat_0 = t_0.^order;
+            t_mat_1 = t_1.^order;
+
+            system_0 = diff_factor_0.*t_mat_0;%t_0 일 때 계수 방정식
+            system_1 = diff_factor_0.*t_mat_1;%t_1 일 때 계수 방정식
+
+            %두 계수 방정 식 system_0와 system_1 의 모든 부분이 필요하지 않고,
+            %가속도 조건 까지만 주어지는 경우 계수 방정식의 2계도함수 항 까지만 상수항이 존재하므로,
+            %상수항이 정의된 0~2계 도함수의 행들만 방정식 풀이에 이용할 수 있다.
+            system_combination = [system_0(1:3, :);system_1(1:3, :)]%t_0의 계수 방정식 행렬과 t_1의 계수 방정식 행렬을 조합하는 부분.
+            const_mat(1:3,:) = x_0;
+            const_mat(4:6,:) = x_1;%주어진 조건을 토대로 얻어진 상수행렬
+            const_mat
+            %연립방정식 행렬풀이 x = a\b;
+            x_vect = system_combination\const_mat
+
+            %시간벡터
+            time = (t_0+t_precision:t_precision:t_1)';%**중요**처음 시작 포인트를 제외하고 연산.
+
+            x = (time.^order(1, :)).*diff_factor_0(1, :)*x_vect;
+            x_d = (time.^order(2, :)).*diff_factor_0(2, :)*x_vect;
+            x_dd = (time.^order(3, :)).*diff_factor_0(3, :)*x_vect;
+
+
+            % 주요 행렬의 형태 예시
+            % t_0 = 0, t_1 = 5 일 때
+            % system_combination =
+            %
+            %            1           0           0           0           0           0
+            %            0           1           0           0           0           0
+            %            0           0           2           0           0           0
+            %            1           5          25         125         625        3125
+            %            0           1          10          75         500        3125
+            %            0           0           2          30         300        2500
+        end
+    end
+
+
+    % Callbacks that handle component events
+    methods (Access = private)
+
+        % Code that executes after component creation
+        function startupFcn(app)
+            clc
+            app.num_of_points = 0;
+            app.forward_kinematics();
+            app.joint_val_arr;
+            app.update_position();
+            app.update_attitude();
+
+            time_return = 0:0.01:1;
+            x_return = zeros(101, 6);
+            x_d_return = zeros(101, 6);
+            x_dd_return = zeros(101, 6);
+            hold on
+            plot(app.UIAxes2, time_return, x_return);
+            title(app.UIAxes2, "Angle");
+            ylabel(app.UIAxes2, "Angle(deg)");
+            xlabel(app.UIAxes2, "Time(s)");
+            plot(app.UIAxes3, time_return, x_d_return);
+            title(app.UIAxes3, "speed");
+            ylabel(app.UIAxes3, "speed(rad/s)");
+            xlabel(app.UIAxes3, "Time(s)");
+            plot(app.UIAxes4, time_return, x_dd_return);
+            title(app.UIAxes4, "acceleration");
+            ylabel(app.UIAxes4, "acceleration(rad/s^2)");
+            xlabel(app.UIAxes4, "Time(s)");
+            hold off
+        end
+
+        % Button pushed function: randomButton
+        function randomButtonPushed(app, event)
+           joint_lim_deg = [-90, 90;
+                -45, 135;
+                -160, 120;
+                -350, 350;
+                -120, 120;
+                -350, 350;
+                ]
+            joint_val_arr_local = app.monte_carlo_rand(joint_lim_deg, 30, 1);
+            app.joint_val_arr = joint_val_arr_local;
+            app.update_joint_anlge_view();
+            app.update_slider_val();
+            app.forward_kinematics();
+            % https://www.petercorke.com/RTB/r9/html/SerialLink.html
+        end
+
+        % Button pushed function: inverseButton
+        function inverseButtonPushed(app, event)
+            app.inverse()
+            app.update_position();
+            app.update_attitude();
+        end
+
+        % Button pushed function: setzeroButton
+        function setzeroButtonPushed(app, event)
+            app.joint_1Slider.Value = 0;
+            app.joint_2Slider.Value = 0;
+            app.joint_3Slider.Value = 0;
+            app.joint_4Slider.Value = 0;
+            app.joint_5Slider.Value = 0;
+            app.joint_6Slider.Value = 0;
+
+            app.joint_val_arr = [0, 0, 0, 0, 0, 0];
+            app.update_joint_anlge_view();
+            app.forward_kinematics();
+        end
+
+        % Value changed function: joint_1Slider
+        function joint_1SliderValueChanged(app, event)
+            value = app.joint_1Slider.Value;
+            app.update_joint_anlge_array();
+            app.update_joint_anlge_view();
+            app.forward_kinematics();
+        end
+
+        % Value changed function: joint_2Slider
+        function joint_2SliderValueChanged(app, event)
+            value = app.joint_2Slider.Value;
+            app.update_joint_anlge_array();
+            disp(app.joint_val_arr)
+            app.update_joint_anlge_view();
+            app.forward_kinematics();
+        end
+
+        % Value changed function: joint_3Slider
+        function joint_3SliderValueChanged(app, event)
+            value = app.joint_3Slider.Value;
+            app.update_joint_anlge_array();
+            app.update_joint_anlge_view();
+            app.forward_kinematics();
+        end
+
+        % Value changed function: joint_4Slider
+        function joint_4SliderValueChanged(app, event)
+            value = app.joint_4Slider.Value;
+            app.update_joint_anlge_array();
+            app.update_joint_anlge_view();
+            app.forward_kinematics();
+        end
+
+        % Value changed function: joint_5Slider
+        function joint_5SliderValueChanged(app, event)
+            value = app.joint_5Slider.Value;
+            app.update_joint_anlge_array();
+            app.update_joint_anlge_view();
+            app.forward_kinematics();
+        end
+
+        % Value changed function: joint_6Slider
+        function joint_6SliderValueChanged(app, event)
+            value = app.joint_6Slider.Value;
+            app.update_joint_anlge_array();
+            app.update_joint_anlge_view();
+            app.forward_kinematics();
+        end
+
+        % Value changed function: joint_anlge_view_1
+        function joint_anlge_view_1ValueChanged(app, event)
+            value = app.joint_anlge_view_1.Value;
+            app.joint_val_arr(1) = value;
+            app.update_slider_val();
+            app.update_joint_anlge_array();
+            app.update_joint_anlge_view();
+            app.forward_kinematics();
+        end
+
+        % Value changed function: joint_anlge_view_2
+        function joint_anlge_view_2ValueChanged(app, event)
+            value = app.joint_anlge_view_2.Value;
+            app.joint_val_arr(2) = value;
+            app.update_slider_val();
+            app.update_joint_anlge_array();
+            app.update_joint_anlge_view();
+            app.forward_kinematics();
+        end
+
+        % Value changed function: joint_anlge_view_3
+        function joint_anlge_view_3ValueChanged(app, event)
+            value = app.joint_anlge_view_3.Value;
+            app.joint_val_arr(3) = value;
+            app.update_slider_val();
+            app.update_joint_anlge_array();
+            app.update_joint_anlge_view();
+            app.forward_kinematics();
+        end
+
+        % Value changed function: joint_anlge_view_4
+        function joint_anlge_view_4ValueChanged(app, event)
+            value = app.joint_anlge_view_4.Value;
+            app.joint_val_arr(4) = value;
+            app.update_slider_val();
+            app.update_joint_anlge_array();
+            app.update_joint_anlge_view();
+            app.forward_kinematics();
+        end
+
+        % Value changed function: joint_anlge_view_5
+        function joint_anlge_view_5ValueChanged(app, event)
+            value = app.joint_anlge_view_5.Value;
+            app.joint_val_arr(5) = value;
+            app.update_slider_val();
+            app.update_joint_anlge_array();
+            app.update_joint_anlge_view();
+            app.forward_kinematics();
+        end
+
+        % Value changed function: joint_anlge_view_6
+        function joint_anlge_view_6ValueChanged(app, event)
+            value = app.joint_anlge_view_6.Value;
+            app.joint_val_arr(6) = value;
+            app.update_slider_val();
+            app.update_joint_anlge_array();
+            app.update_joint_anlge_view();
+            app.forward_kinematics();
+        end
+
+        % Value changed function: attitude_roll
+        function attitude_rollValueChanged(app, event)
+            value = app.attitude_roll.Value;
+            app.inverse()
+            app.update_joint_anlge_view();
+            app.update_slider_val();
+            app.update_position();
+            app.update_attitude();
+        end
+
+        % Value changed function: attitude_pitch
+        function attitude_pitchValueChanged(app, event)
+            value = app.attitude_pitch.Value;
+            app.inverse()
+            app.update_joint_anlge_view();
+            app.update_slider_val();
+            app.update_position();
+            app.update_attitude();
+        end
+
+        % Value changed function: attitude_yaw
+        function attitude_yawValueChanged(app, event)
+            value = app.attitude_yaw.Value;
+            app.inverse()
+            app.update_joint_anlge_view();
+            app.update_slider_val();
+            app.update_position();
+            app.update_attitude();
+        end
+
+        % Value changed function: position_x
+        function position_xValueChanged(app, event)
+            value = app.position_x.Value;
+            app.inverse()
+            app.update_joint_anlge_view();
+            app.update_slider_val();
+            app.update_position();
+            app.update_attitude();
+        end
+
+        % Value changed function: position_y
+        function position_yValueChanged(app, event)
+            value = app.position_y.Value;
+            app.inverse()
+            app.update_joint_anlge_view();
+            app.update_slider_val();
+            app.update_position();
+            app.update_attitude();
+        end
+
+        % Value changed function: position_z
+        function position_zValueChanged(app, event)
+            value = app.position_z.Value;
+            app.inverse()
+            app.update_joint_anlge_view();
+            app.update_slider_val();
+            app.update_position();
+            app.update_attitude();
+        end
+
+        % Button pushed function: 
+        % workspacewithrobotplotrecomenditer100Button
+        function workspacewithrobotplotrecomenditer100ButtonPushed(app, event)
+            length  = round(app.workspace_check_iteration.Value);
+            joint_lim_deg = [-90, 90;
+                -45, 135;
+                -160, 120;
+                -350, 350;
+                -120, 120;
+                -350, 350;
+                ]
+            app.joint_val_arr = [-90, -45, -160, -350, -120, -350];
+
+            position_array = zeros(length, 3);
+            n = 1;
+            while n < length+1
+                joint_val_arr_local = app.monte_carlo_rand(joint_lim_deg, 30, 1);
+                app.joint_val_arr = joint_val_arr_local;
+                app.update_joint_anlge_view();
+                app.update_slider_val();
+                %                 app.forward_kinematics_with_out_plot();
+                app.forward_kinematics();
+                position_array(n, 1) = app.P_x;
+                position_array(n, 2) = app.P_y;
+                position_array(n, 3) = app.P_z;
+                n = n+1;
+                if mod(n,100) == 0
+                    fprintf("%d\n",n);
+                end
+            end
+            title("robot workspace test");
+            scatter3(position_array(:, 1), position_array(:, 2), position_array(:, 3), '.', 'MarkerEdgeColor', [0,0,1]);
+        end
+
+        % Button pushed function: 
+        % workspacewithoutrobotplotrecomenditer1000Button
+        function workspacewithoutrobotplotrecomenditer1000ButtonPushed(app, event)
+            length  = round(app.workspace_check_iteration.Value);
+            joint_lim_deg = [-90, 90;
+                -45, 135;
+                -160, 120;
+                -350, 350;
+                -120, 120;
+                -350, 350;
+                ]
+            app.joint_val_arr = [-90, -45, -160, -350, -120, -350];
+
+            position_array = zeros(length, 3);
+            n = 1;
+            while n < length+1
+                joint_val_arr_local = app.monte_carlo_rand(joint_lim_deg, 30, 1);
+                app.joint_val_arr = joint_val_arr_local;
+                app.update_joint_anlge_view();
+                app.update_slider_val();
+                app.forward_kinematics_with_out_plot();
+                %                 app.forward_kinematics();
+                position_array(n, 1) = app.P_x;
+                position_array(n, 2) = app.P_y;
+                position_array(n, 3) = app.P_z;
+                n = n+1;
+                if mod(n,100) == 0
+                    fprintf("%d\n",n);
+                end
+            end
+            title("robot workspace test");
+            scatter3(position_array(:, 1), position_array(:, 2), position_array(:, 3), '.', 'MarkerEdgeColor', [0,0,1]);
+        end
+
+        % Button pushed function: setwaypointButton
+        function setwaypointButtonPushed(app, event)
+            x_temp = zeros(3, 6);
+            speed = app.speedSpinner.Value;
+            time_gap = app.time_gapSpinner.Value;
+
+            app.num_of_points = app.num_of_points + 1;
+
+            if(app.num_of_points <= 1)
+                app.timings(app.num_of_points) = 0;
+            else
+                disp(app.num_of_points)
+                app.timings(app.num_of_points) = app.timings(app.num_of_points-1) + time_gap;
+            end
+
+            x_temp(1, :) = app.joint_val_arr.*(pi/180);
+            x_temp(2, :) = speed*ones(1, 6);
+            x_temp(3, :) = zeros(1, 6);
+            app.position_state_array(app.num_of_points, :, :) = x_temp;
+        end
+
+        % Button pushed function: clearallwaypointsButton
+        function clearallwaypointsButtonPushed(app, event)
+            app.num_of_points = 0;
+            app.position_state_array(:, :, :) = [];
+            app.timings(:) = [];
+            time_return = 0:0.01:1;
+            x_return = zeros(101, 6);
+            x_d_return = zeros(101, 6);
+            x_dd_return = zeros(101, 6);
+
+            hold on
+            plot(app.UIAxes2, time_return, x_return);
+            title(app.UIAxes2, "Angle");
+            ylabel(app.UIAxes2, "Angle(deg)");
+            xlabel(app.UIAxes2, "Time(s)");
+            plot(app.UIAxes3, time_return, x_d_return);
+            title(app.UIAxes3, "speed");
+            ylabel(app.UIAxes3, "speed(rad/s)");
+            xlabel(app.UIAxes3, "Time(s)");
+            plot(app.UIAxes4, time_return, x_dd_return);
+            title(app.UIAxes4, "acceleration");
+            ylabel(app.UIAxes4, "acceleration(rad/s^2)");
+            xlabel(app.UIAxes4, "Time(s)");
+            hold off
+
+        end
+
+        % Button pushed function: 
+        % planningLeast2pointsrequiredtoplanningButton
+        function planningLeast2pointsrequiredtoplanningButtonPushed(app, event)
+            if(app.num_of_points >= 2)
+                time = [];
+                x = [];
+                x_d = [];
+                x_dd = [];
+
+                t_precision = app.time_precisionSpinner.Value;
+
+                app.timings;
+                app.position_state_array;
+                iteration = app.num_of_points;
+
+                %             가장 첫 지점은 주어진 첫 입력의 상태를 그대로 사용.
+
+                time(1) = 0;
+                x(1, :) = app.position_state_array(1, 1, :);
+                x_d(1, :) = app.position_state_array(1, 2, :);
+                x_dd(1, :) = app.position_state_array(1, 3, :);
+
+                i = 1
+
+                x_0(:, :) = app.position_state_array(i, :, :);
+                x_1(:, :) = app.position_state_array(i+1, :, :);
+                while(i < iteration)
+                    [time_return, x_return, x_d_return, x_dd_return] = app.poly5(app.position_state_array(i, :, :), app.position_state_array(i+1, :, :), app.timings(i), app.timings(i+1), t_precision);
+                    time = [time;time_return];
+                    x = [x;x_return];
+                    x_d = [x_d;x_d_return];
+                    x_dd = [x_dd;x_dd_return];
+                    i = i+1;
+                end
+
+                app.time_domain = time;
+                app.x_range = x;
+                app.x_d_range = x_d;
+                app.x_dd_range = x_dd;
+
+                hold on
+                plot(app.UIAxes2, time, x.*(180/pi));
+                title(app.UIAxes2, "Angle");
+                ylabel(app.UIAxes2, "Angle(deg)");
+                xlabel(app.UIAxes2, "Time(s)");
+                plot(app.UIAxes3, time, x_d);
+                title(app.UIAxes3, "speed");
+                ylabel(app.UIAxes3, "speed(rad/s)");
+                xlabel(app.UIAxes3, "Time(s)");
+                plot(app.UIAxes4, time, x_dd);
+                title(app.UIAxes4, "acceleration");
+                ylabel(app.UIAxes4, "acceleration(rad/s^2)");
+                xlabel(app.UIAxes4, "Time(s)");
+                hold off
+            end
+        end
+
+        % Button pushed function: moveplanningisrequiredbeforeusingButton
+        function moveplanningisrequiredbeforeusingButtonPushed(app, event)
+            time_precision = app.time_precisionSpinner.Value;
+            shape = size(app.time_domain);
+            length = shape(1, 1);
+            iter = 1;
+            while (iter <= length)
+                app.joint_val_arr = app.x_range(iter, :)*(180/pi);
+                app.update_joint_anlge_view();
+                app.update_slider_val();
+                app.forward_kinematics();
+                pause(time_precision*0.1);
+                iter = iter + 1;
+            end
+        end
+    end
+
+    % Component initialization
+    methods (Access = private)
+
+        % Create UIFigure and components
+        function createComponents(app)
+
+            % Create UIFigure and hide until all components are created
+            app.UIFigure = uifigure('Visible', 'off');
+            app.UIFigure.Position = [100 100 1723 590];
+            app.UIFigure.Name = 'MATLAB App';
+            app.UIFigure.HandleVisibility = 'on';
+
+            % Create UIAxes4
+            app.UIAxes4 = uiaxes(app.UIFigure);
+            title(app.UIAxes4, 'Title')
+            xlabel(app.UIAxes4, 'X')
+            ylabel(app.UIAxes4, 'Y')
+            zlabel(app.UIAxes4, 'Z')
+            app.UIAxes4.Position = [1375 38 318 165];
+
+            % Create UIAxes3
+            app.UIAxes3 = uiaxes(app.UIFigure);
+            title(app.UIAxes3, 'Title')
+            xlabel(app.UIAxes3, 'X')
+            ylabel(app.UIAxes3, 'Y')
+            zlabel(app.UIAxes3, 'Z')
+            app.UIAxes3.Position = [1375 215 318 165];
+
+            % Create UIAxes2
+            app.UIAxes2 = uiaxes(app.UIFigure);
+            title(app.UIAxes2, 'Title')
+            xlabel(app.UIAxes2, 'X')
+            ylabel(app.UIAxes2, 'Y')
+            zlabel(app.UIAxes2, 'Z')
+            app.UIAxes2.Position = [1375 393 318 165];
+
+            % Create UIAxes
+            app.UIAxes = uiaxes(app.UIFigure);
+            title(app.UIAxes, 'Title')
+            xlabel(app.UIAxes, 'X')
+            ylabel(app.UIAxes, 'Y')
+            zlabel(app.UIAxes, 'Z')
+            app.UIAxes.TickDir = 'in';
+            app.UIAxes.Position = [585 168 409 360];
+
+            % Create inverseButton
+            app.inverseButton = uibutton(app.UIFigure, 'push');
+            app.inverseButton.ButtonPushedFcn = createCallbackFcn(app, @inverseButtonPushed, true);
+            app.inverseButton.Position = [434 66 100 23];
+            app.inverseButton.Text = 'inverse';
+
+            % Create position_z
+            app.position_z = uispinner(app.UIFigure);
+            app.position_z.Step = 0.05;
+            app.position_z.ValueChangedFcn = createCallbackFcn(app, @position_zValueChanged, true);
+            app.position_z.Position = [436 188 100 22];
+
+            % Create position_y
+            app.position_y = uispinner(app.UIFigure);
+            app.position_y.Step = 0.05;
+            app.position_y.ValueChangedFcn = createCallbackFcn(app, @position_yValueChanged, true);
+            app.position_y.Position = [436 226 100 22];
+
+            % Create position_x
+            app.position_x = uispinner(app.UIFigure);
+            app.position_x.Step = 0.05;
+            app.position_x.ValueChangedFcn = createCallbackFcn(app, @position_xValueChanged, true);
+            app.position_x.Position = [436 264 100 22];
+
+            % Create attitude_yaw
+            app.attitude_yaw = uispinner(app.UIFigure);
+            app.attitude_yaw.ValueChangedFcn = createCallbackFcn(app, @attitude_yawValueChanged, true);
+            app.attitude_yaw.Position = [437 362 100 22];
+
+            % Create attitude_pitch
+            app.attitude_pitch = uispinner(app.UIFigure);
+            app.attitude_pitch.ValueChangedFcn = createCallbackFcn(app, @attitude_pitchValueChanged, true);
+            app.attitude_pitch.Position = [437 400 100 22];
+
+            % Create attitude_roll
+            app.attitude_roll = uispinner(app.UIFigure);
+            app.attitude_roll.ValueChangedFcn = createCallbackFcn(app, @attitude_rollValueChanged, true);
+            app.attitude_roll.Position = [437 438 100 22];
+
+            % Create joint_1SliderLabel
+            app.joint_1SliderLabel = uilabel(app.UIFigure);
+            app.joint_1SliderLabel.HorizontalAlignment = 'right';
+            app.joint_1SliderLabel.Position = [94 453 40 22];
+            app.joint_1SliderLabel.Text = 'joint_1';
+
+            % Create joint_1Slider
+            app.joint_1Slider = uislider(app.UIFigure);
+            app.joint_1Slider.Limits = [-90 90];
+            app.joint_1Slider.ValueChangedFcn = createCallbackFcn(app, @joint_1SliderValueChanged, true);
+            app.joint_1Slider.Position = [155 462 96 7];
+
+            % Create joint_2Slider
+            app.joint_2Slider = uislider(app.UIFigure);
+            app.joint_2Slider.Limits = [-45 135];
+            app.joint_2Slider.ValueChangedFcn = createCallbackFcn(app, @joint_2SliderValueChanged, true);
+            app.joint_2Slider.Position = [155 399 96 7];
+
+            % Create joint_3Slider
+            app.joint_3Slider = uislider(app.UIFigure);
+            app.joint_3Slider.Limits = [-160 120];
+            app.joint_3Slider.ValueChangedFcn = createCallbackFcn(app, @joint_3SliderValueChanged, true);
+            app.joint_3Slider.Position = [155 337 96 7];
+
+            % Create joint_4Slider
+            app.joint_4Slider = uislider(app.UIFigure);
+            app.joint_4Slider.Limits = [-350 350];
+            app.joint_4Slider.ValueChangedFcn = createCallbackFcn(app, @joint_4SliderValueChanged, true);
+            app.joint_4Slider.Position = [155 275 96 7];
+
+            % Create joint_2SliderLabel
+            app.joint_2SliderLabel = uilabel(app.UIFigure);
+            app.joint_2SliderLabel.HorizontalAlignment = 'right';
+            app.joint_2SliderLabel.Position = [94 390 40 22];
+            app.joint_2SliderLabel.Text = 'joint_2';
+
+            % Create joint_6SliderLabel
+            app.joint_6SliderLabel = uilabel(app.UIFigure);
+            app.joint_6SliderLabel.HorizontalAlignment = 'right';
+            app.joint_6SliderLabel.Position = [96 142 40 22];
+            app.joint_6SliderLabel.Text = 'joint_6';
+
+            % Create joint_5Slider
+            app.joint_5Slider = uislider(app.UIFigure);
+            app.joint_5Slider.Limits = [-120 120];
+            app.joint_5Slider.ValueChangedFcn = createCallbackFcn(app, @joint_5SliderValueChanged, true);
+            app.joint_5Slider.Position = [155 213 96 7];
+
+            % Create joint_6Slider
+            app.joint_6Slider = uislider(app.UIFigure);
+            app.joint_6Slider.Limits = [-350 350];
+            app.joint_6Slider.ValueChangedFcn = createCallbackFcn(app, @joint_6SliderValueChanged, true);
+            app.joint_6Slider.Position = [157 151 96 7];
+
+            % Create joint_5SliderLabel
+            app.joint_5SliderLabel = uilabel(app.UIFigure);
+            app.joint_5SliderLabel.HorizontalAlignment = 'right';
+            app.joint_5SliderLabel.Position = [94 204 40 22];
+            app.joint_5SliderLabel.Text = 'joint_5';
+
+            % Create joint_4SliderLabel
+            app.joint_4SliderLabel = uilabel(app.UIFigure);
+            app.joint_4SliderLabel.HorizontalAlignment = 'right';
+            app.joint_4SliderLabel.Position = [94 266 40 22];
+            app.joint_4SliderLabel.Text = 'joint_4';
+
+            % Create joint_3SliderLabel
+            app.joint_3SliderLabel = uilabel(app.UIFigure);
+            app.joint_3SliderLabel.HorizontalAlignment = 'right';
+            app.joint_3SliderLabel.Position = [94 328 40 22];
+            app.joint_3SliderLabel.Text = 'joint_3';
+
+            % Create RollLabel
+            app.RollLabel = uilabel(app.UIFigure);
+            app.RollLabel.HorizontalAlignment = 'center';
+            app.RollLabel.Position = [380 437 45 22];
+            app.RollLabel.Text = 'Roll';
+
+            % Create PitchLabel
+            app.PitchLabel = uilabel(app.UIFigure);
+            app.PitchLabel.HorizontalAlignment = 'center';
+            app.PitchLabel.Position = [380 399 45 22];
+            app.PitchLabel.Text = 'Pitch';
+
+            % Create YawLabel
+            app.YawLabel = uilabel(app.UIFigure);
+            app.YawLabel.HorizontalAlignment = 'center';
+            app.YawLabel.Position = [380 361 45 22];
+            app.YawLabel.Text = 'Yaw';
+
+            % Create XLabel
+            app.XLabel = uilabel(app.UIFigure);
+            app.XLabel.HorizontalAlignment = 'center';
+            app.XLabel.Position = [380 263 45 22];
+            app.XLabel.Text = 'X';
+
+            % Create YLabel
+            app.YLabel = uilabel(app.UIFigure);
+            app.YLabel.HorizontalAlignment = 'center';
+            app.YLabel.Position = [380 225 45 22];
+            app.YLabel.Text = 'Y';
+
+            % Create ZLabel
+            app.ZLabel = uilabel(app.UIFigure);
+            app.ZLabel.HorizontalAlignment = 'center';
+            app.ZLabel.Position = [380 187 45 22];
+            app.ZLabel.Text = 'Z';
+
+            % Create randomButton
+            app.randomButton = uibutton(app.UIFigure, 'push');
+            app.randomButton.ButtonPushedFcn = createCallbackFcn(app, @randomButtonPushed, true);
+            app.randomButton.Position = [219 66 100 23];
+            app.randomButton.Text = 'random';
+
+            % Create setzeroButton
+            app.setzeroButton = uibutton(app.UIFigure, 'push');
+            app.setzeroButton.ButtonPushedFcn = createCallbackFcn(app, @setzeroButtonPushed, true);
+            app.setzeroButton.Position = [106 66 100 23];
+            app.setzeroButton.Text = 'set zero';
+
+            % Create joint_anlge_view_1
+            app.joint_anlge_view_1 = uieditfield(app.UIFigure, 'numeric');
+            app.joint_anlge_view_1.ValueChangedFcn = createCallbackFcn(app, @joint_anlge_view_1ValueChanged, true);
+            app.joint_anlge_view_1.Position = [285 453 48 22];
+
+            % Create joint_anlge_view_2
+            app.joint_anlge_view_2 = uieditfield(app.UIFigure, 'numeric');
+            app.joint_anlge_view_2.ValueChangedFcn = createCallbackFcn(app, @joint_anlge_view_2ValueChanged, true);
+            app.joint_anlge_view_2.Position = [284 391 48 22];
+
+            % Create joint_anlge_view_3
+            app.joint_anlge_view_3 = uieditfield(app.UIFigure, 'numeric');
+            app.joint_anlge_view_3.ValueChangedFcn = createCallbackFcn(app, @joint_anlge_view_3ValueChanged, true);
+            app.joint_anlge_view_3.Position = [284 329 48 22];
+
+            % Create joint_anlge_view_4
+            app.joint_anlge_view_4 = uieditfield(app.UIFigure, 'numeric');
+            app.joint_anlge_view_4.ValueChangedFcn = createCallbackFcn(app, @joint_anlge_view_4ValueChanged, true);
+            app.joint_anlge_view_4.Position = [284 267 48 22];
+
+            % Create joint_anlge_view_5
+            app.joint_anlge_view_5 = uieditfield(app.UIFigure, 'numeric');
+            app.joint_anlge_view_5.ValueChangedFcn = createCallbackFcn(app, @joint_anlge_view_5ValueChanged, true);
+            app.joint_anlge_view_5.Position = [284 205 48 22];
+
+            % Create joint_anlge_view_6
+            app.joint_anlge_view_6 = uieditfield(app.UIFigure, 'numeric');
+            app.joint_anlge_view_6.ValueChangedFcn = createCallbackFcn(app, @joint_anlge_view_6ValueChanged, true);
+            app.joint_anlge_view_6.Position = [285 143 48 22];
+
+            % Create workspacewithrobotplotrecomenditer100Button
+            app.workspacewithrobotplotrecomenditer100Button = uibutton(app.UIFigure, 'push');
+            app.workspacewithrobotplotrecomenditer100Button.ButtonPushedFcn = createCallbackFcn(app, @workspacewithrobotplotrecomenditer100ButtonPushed, true);
+            app.workspacewithrobotplotrecomenditer100Button.BusyAction = 'cancel';
+            app.workspacewithrobotplotrecomenditer100Button.Position = [659 50 121 54];
+            app.workspacewithrobotplotrecomenditer100Button.Text = {'workspace'; 'with robot plot'; 'recomend iter. : 100'};
+
+            % Create workspace_check_iteration
+            app.workspace_check_iteration = uieditfield(app.UIFigure, 'numeric');
+            app.workspace_check_iteration.Limits = [0 Inf];
+            app.workspace_check_iteration.RoundFractionalValues = 'on';
+            app.workspace_check_iteration.ValueDisplayFormat = '%.0f';
+            app.workspace_check_iteration.Position = [783 125 76 22];
+            app.workspace_check_iteration.Value = 100;
+
+            % Create workspacewithoutrobotplotrecomenditer1000Button
+            app.workspacewithoutrobotplotrecomenditer1000Button = uibutton(app.UIFigure, 'push');
+            app.workspacewithoutrobotplotrecomenditer1000Button.ButtonPushedFcn = createCallbackFcn(app, @workspacewithoutrobotplotrecomenditer1000ButtonPushed, true);
+            app.workspacewithoutrobotplotrecomenditer1000Button.BusyAction = 'cancel';
+            app.workspacewithoutrobotplotrecomenditer1000Button.Position = [791 50 128 54];
+            app.workspacewithoutrobotplotrecomenditer1000Button.Text = {'workspace'; 'without robot plot'; 'recomend iter. : 1000'};
+
+            % Create iterationLabel
+            app.iterationLabel = uilabel(app.UIFigure);
+            app.iterationLabel.HorizontalAlignment = 'center';
+            app.iterationLabel.Position = [710 125 75 22];
+            app.iterationLabel.Text = 'iteration';
+
+            % Create time_gapSpinnerLabel
+            app.time_gapSpinnerLabel = uilabel(app.UIFigure);
+            app.time_gapSpinnerLabel.HorizontalAlignment = 'right';
+            app.time_gapSpinnerLabel.Position = [1092 330 55 22];
+            app.time_gapSpinnerLabel.Text = 'time_gap';
+
+            % Create time_gapSpinner
+            app.time_gapSpinner = uispinner(app.UIFigure);
+            app.time_gapSpinner.Step = 0.1;
+            app.time_gapSpinner.Limits = [0 Inf];
+            app.time_gapSpinner.Position = [1180 330 82 22];
+            app.time_gapSpinner.Value = 1;
+
+            % Create setwaypointButton
+            app.setwaypointButton = uibutton(app.UIFigure, 'push');
+            app.setwaypointButton.ButtonPushedFcn = createCallbackFcn(app, @setwaypointButtonPushed, true);
+            app.setwaypointButton.Position = [1045 231 144 33];
+            app.setwaypointButton.Text = 'set waypoint';
+
+            % Create clearallwaypointsButton
+            app.clearallwaypointsButton = uibutton(app.UIFigure, 'push');
+            app.clearallwaypointsButton.ButtonPushedFcn = createCallbackFcn(app, @clearallwaypointsButtonPushed, true);
+            app.clearallwaypointsButton.Position = [1202 231 142 33];
+            app.clearallwaypointsButton.Text = 'clear all waypoints';
+
+            % Create planningLeast2pointsrequiredtoplanningButton
+            app.planningLeast2pointsrequiredtoplanningButton = uibutton(app.UIFigure, 'push');
+            app.planningLeast2pointsrequiredtoplanningButton.ButtonPushedFcn = createCallbackFcn(app, @planningLeast2pointsrequiredtoplanningButtonPushed, true);
+            app.planningLeast2pointsrequiredtoplanningButton.Position = [1045 97 144 91];
+            app.planningLeast2pointsrequiredtoplanningButton.Text = {'planning'; 'Least 2 points required, '; 'to planning'};
+
+            % Create moveplanningisrequiredbeforeusingButton
+            app.moveplanningisrequiredbeforeusingButton = uibutton(app.UIFigure, 'push');
+            app.moveplanningisrequiredbeforeusingButton.ButtonPushedFcn = createCallbackFcn(app, @moveplanningisrequiredbeforeusingButtonPushed, true);
+            app.moveplanningisrequiredbeforeusingButton.Position = [1202 97 142 91];
+            app.moveplanningisrequiredbeforeusingButton.Text = {'move'; 'planning is required'; 'before using'};
+
+            % Create time_precisionSpinnerLabel
+            app.time_precisionSpinnerLabel = uilabel(app.UIFigure);
+            app.time_precisionSpinnerLabel.HorizontalAlignment = 'right';
+            app.time_precisionSpinnerLabel.Position = [1082 421 83 22];
+            app.time_precisionSpinnerLabel.Text = 'time_precision';
+
+            % Create time_precisionSpinner
+            app.time_precisionSpinner = uispinner(app.UIFigure);
+            app.time_precisionSpinner.Step = 0.01;
+            app.time_precisionSpinner.Limits = [0 1];
+            app.time_precisionSpinner.Position = [1180 421 95 22];
+            app.time_precisionSpinner.Value = 0.05;
+
+            % Create speedradsSpinnerLabel
+            app.speedradsSpinnerLabel = uilabel(app.UIFigure);
+            app.speedradsSpinnerLabel.HorizontalAlignment = 'right';
+            app.speedradsSpinnerLabel.Position = [1091 375 76 22];
+            app.speedradsSpinnerLabel.Text = 'speed (rad/s)';
+
+            % Create speedSpinner
+            app.speedSpinner = uispinner(app.UIFigure);
+            app.speedSpinner.Step = 5;
+            app.speedSpinner.Position = [1180 375 95 22];
+
+            % Show the figure after all components are created
+            app.UIFigure.Visible = 'on';
+        end
+    end
+
+    % App creation and deletion
+    methods (Access = public)
+
+        % Construct app
+        function app = app_02_00
+
+            % Create UIFigure and components
+            createComponents(app)
+
+            % Register the app with App Designer
+            registerApp(app, app.UIFigure)
+
+            % Execute the startup function
+            runStartupFcn(app, @startupFcn)
+
+            if nargout == 0
+                clear app
+            end
+        end
+
+        % Code that executes before app deletion
+        function delete(app)
+
+            % Delete UIFigure when app is deleted
+            delete(app.UIFigure)
+        end
+    end
+end
